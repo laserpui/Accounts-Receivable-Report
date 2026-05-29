@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Accounts Receivable Report</title>
+    
+    <!-- PWA Meta Tags สำหรับทำให้เป็น App บนมือถือ -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AR Report">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%232563eb' rx='100'/%3E%3Cpath d='M344.5 298c15-23.6 23.8-51.6 23.8-81.7 0-84.1-68.1-152.3-152.1-152.3C132.1 64 64 132.2 64 216.3c0 84.1 68.1 152.3 152.1 152.3 30.5 0 58.9-9 82.7-24.4l69 69c3.4 3.4 8.3 5.4 13.3 5.4s9.9-2 13.3-5.4c7.4-7.4 7.4-19.4 0-26.7l-49.9-48.5zm-128.3 38.6c-66.2 0-120.1-53.9-120.1-120.3s53.9-120.3 120.1-120.3s53.9-120.3 120.1-120.3 120.1 53.9 120.1 120.3-53.9 120.3-120.1 120.3z' fill='%23fff'/%3E%3C/svg%3E">
+    <link rel="manifest" id="manifest-link">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- Google Fonts: Noto Sans Thai -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans Thai', sans-serif;
+            background-color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .table-container::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .table-container {
+            -webkit-overflow-scrolling: touch; 
+            cursor: grab;
+        }
+        .table-container:active {
+            cursor: grabbing;
+        }
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased m-0 p-0 w-full h-full absolute inset-0 overflow-hidden bg-white flex flex-col">
+
+    <div class="w-full h-full flex flex-col">
+        
+        <!-- Header Section -->
+        <div class="bg-blue-600 text-white p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center shrink-0 gap-4 select-none z-20 shadow-md">
+            <div class="w-full md:w-auto text-left flex items-center justify-start gap-3">
+                <div class="bg-white/20 p-2.5 rounded-lg shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold mb-0.5 leading-tight">Accounts Receivable Report</h1>
+                    <p class="text-blue-100 text-xs sm:text-sm">ดึงข้อมูลแบบ Real-time จาก Google Sheets</p>
+                </div>
+            </div>
+            
+            <div class="w-full md:w-auto flex flex-col sm:flex-row gap-3 relative justify-end items-stretch sm:items-center">
+                <!-- ช่องค้นหาเดี่ยว -->
+                <div class="relative w-full sm:w-72 lg:w-96">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="ค้นหาข้อมูล..." 
+                        class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm transition text-sm"
+                        disabled
+                    >
+                    <svg class="w-4 h-4 absolute left-3 top-3 sm:top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <div class="flex gap-2 justify-end sm:justify-start w-full sm:w-auto shrink-0">
+                    <!-- ปุ่ม Refresh -->
+                    <button id="refreshBtn" class="flex-1 sm:flex-none bg-blue-700 hover:bg-blue-800 text-white p-2.5 rounded-lg shadow-sm transition flex items-center justify-center shrink-0" title="อัปเดตข้อมูลล่าสุด">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                    <!-- ปุ่ม Export -->
+                    <button id="exportBtn" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white p-2.5 rounded-lg shadow-sm transition flex items-center justify-center shrink-0" title="ส่งออกข้อมูล (CSV)">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date Filter Section -->
+        <div id="dateFilterContainer" class="hidden bg-blue-50 border-b border-blue-100 p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-3 items-start sm:items-center justify-start text-sm shrink-0 shadow-[0_2px_4px_rgba(0,0,0,0.02)] z-10 relative">
+            <div class="flex items-center text-blue-800 font-semibold mb-1 sm:mb-0">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                กรองวันที่:
+            </div>
+            <div class="grid grid-cols-2 sm:flex sm:flex-row gap-2 w-full sm:w-auto">
+                <div class="flex items-center gap-2 bg-white rounded-md p-1.5 px-2.5 border border-blue-200 shadow-sm w-full">
+                    <label for="startDateInput" class="text-gray-500 whitespace-nowrap text-xs sm:text-sm">ตั้งแต่</label>
+                    <input type="date" id="startDateInput" class="bg-transparent outline-none text-gray-700 cursor-pointer w-full text-xs sm:text-sm">
+                </div>
+                <div class="flex items-center gap-2 bg-white rounded-md p-1.5 px-2.5 border border-blue-200 shadow-sm w-full">
+                    <label for="endDateInput" class="text-gray-500 whitespace-nowrap text-xs sm:text-sm">ถึง</label>
+                    <input type="date" id="endDateInput" class="bg-transparent outline-none text-gray-700 cursor-pointer w-full text-xs sm:text-sm">
+                </div>
+            </div>
+            <button id="clearDateBtn" class="w-full sm:w-auto text-blue-500 hover:text-red-500 underline px-2 py-1.5 rounded hover:bg-white transition text-center sm:text-left mt-1 sm:mt-0" title="ล้างการกรองวันที่">
+                ล้างตัวกรอง
+            </button>
+        </div>
+
+        <!-- Status / Messages -->
+        <div id="statusContainer" class="p-4 sm:p-6 text-center text-gray-500 shrink-0">
+            <div id="loadingIndicator" class="flex flex-col items-center justify-center space-y-2 sm:space-y-3">
+                <div class="w-6 h-6 sm:w-8 sm:h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm sm:text-base">กำลังโหลดข้อมูลแบบ Real-time...</p>
+            </div>
+            <div id="errorMessage" class="hidden bg-red-50 text-red-600 p-4 sm:p-6 rounded-lg border border-red-200 flex flex-col items-center max-w-2xl mx-auto">
+                <svg class="w-6 h-6 sm:w-8 sm:h-8 mb-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p class="font-bold text-base sm:text-lg mb-2">ไม่สามารถเชื่อมต่อข้อมูลได้</p>
+                <div class="text-xs sm:text-sm text-left bg-white/70 p-3 sm:p-4 rounded border border-red-100 w-full text-gray-700">
+                    <p class="font-semibold text-red-600 mb-1">แนวทางการตรวจสอบและแก้ไข:</p>
+                    <ul class="list-disc pl-4 sm:pl-5 space-y-1">
+                        <li>ตรวจสอบสิทธิ์ในปุ่ม "แชร์" (Share) สีฟ้าของชีตว่าตั้งเป็น <b>"ทุกคนที่มีลิงก์" (Anyone with the link)</b> เป็นผู้ดูแล้วหรือไม่</li>
+                        <li>หากพึ่งมีการแก้ไขหรือเปลี่ยนโครงสร้างตาราง ให้กดปุ่มรีเฟรช 🔁 อีกครั้งเพื่ออัปเดตระบบภายใน</li>
+                        <li>เครือข่ายองค์กรหรือแอนตี้ไวรัสอาจบล็อกช่องทางการดึง API ด่วนของ Google</li>
+                    </ul>
+                </div>
+                <p id="errorDetail" class="text-[10px] sm:text-xs text-red-400 mt-2 sm:mt-3"></p>
+            </div>
+        </div>
+
+        <!-- Table Area -->
+        <div id="tableWrapper" class="hidden flex-1 overflow-auto table-container relative bg-white w-full">
+            <table class="w-full text-left border-collapse min-w-max">
+                <thead id="tableHead" class="bg-gray-50 sticky top-0 shadow-sm z-10 select-none">
+                    <!-- Headers will be injected here -->
+                </thead>
+                <tbody id="tableBody" class="divide-y divide-gray-200">
+                    <!-- Data rows will be injected here -->
+                </tbody>
+            </table>
+            
+            <div id="noResults" class="hidden p-6 sm:p-10 text-center text-gray-500">
+                <svg class="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-300 mb-2 sm:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="text-base sm:text-lg font-medium">ไม่พบข้อมูลที่ค้นหา</p>
+                <p class="text-xs sm:text-sm mt-1">ลองเปลี่ยนคำค้นหา หรือล้างตัวกรองวันที่ดูอีกครั้ง</p>
+            </div>
+        </div>
+        
+        <!-- Footer Info -->
+        <div class="bg-gray-50 p-2 sm:p-3 text-center text-[10px] sm:text-xs text-gray-500 border-t border-gray-200 shrink-0 shadow-[0_-2px_4px_rgba(0,0,0,0.02)] z-20 relative select-none">
+            อัปเดตล่าสุด: <span id="lastUpdated">-</span> | จำนวนที่แสดง: <span id="rowCount" class="font-bold text-blue-600">0</span> รายการ
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 text-sm flex items-center">
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // การระบุที่อยู่ของข้อมูล Google Sheet
+        // ==========================================
+        const spreadsheetId = '1AM0tye_6iMhVkvEMHTeol3UNedCSUFuoz5UW_mNRPF0';
+        const gid = '2130399355';
+
+        // URL สำหรับวิธี Fallback (เมื่อ JSONP มีปัญหา)
+        const mainPublishedCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToBTxaFb7fJCiG1kRL-Kn7oQApObudKPXH_ZB8gwu5QjHV8degedjvV4tY0TfjoIVUh0maiQwUVvXd/pub?output=csv';
+
+        // กำหนดตำแหน่งเริ่มต้นของวันที่ (แต่อัลกอริทึมใหม่จะสแกนหาแบบไดนามิกด้วย)
+        let targetDateColumnIndex = 0; 
+        
+        let rawData = [];
+        let headers = [];
+        let rows = [];
+        let defaultHeaderOrder = []; 
+        let currentHeaderOrder = []; 
+        let currentDisplayedData = []; 
+        let jsonpTimeout = null;
+
+        const searchInput = document.getElementById('searchInput');
+        const startDateInput = document.getElementById('startDateInput');
+        const endDateInput = document.getElementById('endDateInput');
+        const clearDateBtn = document.getElementById('clearDateBtn');
+        const dateFilterContainer = document.getElementById('dateFilterContainer');
+        const exportBtn = document.getElementById('exportBtn');
+        
+        const statusContainer = document.getElementById('statusContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorDetail = document.getElementById('errorDetail');
+        const tableWrapper = document.getElementById('tableWrapper');
+        const tableHead = document.getElementById('tableHead');
+        const tableBody = document.getElementById('tableBody');
+        const noResults = document.getElementById('noResults');
+        const rowCountEl = document.getElementById('rowCount');
+        const lastUpdatedEl = document.getElementById('lastUpdated');
+        const refreshBtn = document.getElementById('refreshBtn');
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMessage');
+            msgEl.innerHTML = message;
+            
+            toast.className = `fixed bottom-10 left-1/2 transform -translate-x-1/2 px-5 py-3 rounded-xl shadow-xl transition-all duration-300 z-50 text-sm flex items-center gap-2 ${isError ? 'bg-red-600 text-white' : 'bg-gray-800 text-white'}`;
+            
+            if(isError) {
+                msgEl.insertAdjacentHTML('afterbegin', `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> `);
+            } else {
+                msgEl.insertAdjacentHTML('afterbegin', `<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> `);
+            }
+
+            toast.style.opacity = '1';
+            toast.style.bottom = '2rem';
+            
+            setTimeout(() => { 
+                toast.style.opacity = '0'; 
+                toast.style.bottom = '1rem';
+            }, 3000);
+        }
+
+        // 1. ช่องทางดึงข้อมูลแบบ JSONP (เป็นมิตรกับ CORS และไม่ติดสิทธิ์ 403)
+        function loadData() {
+            statusContainer.classList.remove('hidden');
+            loadingIndicator.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            tableWrapper.classList.add('hidden');
+            dateFilterContainer.classList.add('hidden');
+            searchInput.disabled = true;
+            errorDetail.textContent = '';
+
+            const oldScript = document.getElementById('gviz-script');
+            if (oldScript) oldScript.remove();
+
+            let isLoaded = false;
+
+            // กำหนดเวลา Timeout ป้องกันเน็ตหลุด / โหลดค้าง (6 วินาทีสลับไป CSV Direct)
+            if (jsonpTimeout) clearTimeout(jsonpTimeout);
+            jsonpTimeout = setTimeout(() => {
+                if (!isLoaded) {
+                    console.warn('เชื่อมต่อผ่าน API หลักช้าเกินไป กำลังสลับไปยังช่องทางสำรอง (Direct CSV)...');
+                    loadDataViaCSV();
+                }
+            }, 6000);
+
+            // ลงทะเบียนฟังก์ชัน Callback ในระดับ Window
+            window.handleGvizResponse = function(response) {
+                isLoaded = true;
+                clearTimeout(jsonpTimeout);
+
+                try {
+                    if (!response || response.status === 'error') {
+                        throw new Error(response?.errors?.[0]?.detailed_message || 'ข้อผิดพลาดโครงสร้างของชีต');
+                    }
+
+                    const table = response.table;
+                    headers = table.cols.map(col => col.label || '');
+                    
+                    // แปลงแถวข้อมูลโดยตรวจสอบค่า null และเลือกใช้ค่าจัดรูปแบบ .f หากมี
+                    rows = table.rows.map(row => {
+                        const cells = [];
+                        for (let i = 0; i < table.cols.length; i++) {
+                            const cell = row.c[i];
+                            if (!cell) {
+                                cells.push('');
+                            } else {
+                                cells.push(cell.f !== undefined ? cell.f : (cell.v !== undefined ? cell.v : ''));
+                            }
+                        }
+                        return cells;
+                    });
+
+                    processLoadedData();
+
+                } catch (err) {
+                    console.error('JSONP Parsing Error:', err);
+                    loadDataViaCSV(); // หากวิเคราะห์ผิดพลาด ให้ลองสลับไป CSV ทันที
+                }
+            };
+
+            // สร้าง Element Script เพื่อเรียกใช้ JSONP
+            const script = document.createElement('script');
+            script.id = 'gviz-script';
+            script.src = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=responseHandler:handleGvizResponse&gid=${gid}`;
+            script.onerror = function() {
+                isLoaded = true;
+                clearTimeout(jsonpTimeout);
+                console.warn('เกิดปัญหาขณะเชื่อมต่อ API ด่วน กำลังรันช่องทางดึงตรง...');
+                loadDataViaCSV();
+            };
+            document.head.appendChild(script);
+        }
+
+        // 2. ช่องทางสำรอง: ดึง CSV ตรง ๆ (เมื่อระบบหลักไม่ตอบสนอง)
+        async function loadDataViaCSV() {
+            try {
+                const response = await fetch(mainPublishedCsvUrl);
+                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                const text = await response.text();
+                
+                if (text.trim().toLowerCase().startsWith('<!doctype html>')) {
+                    throw new Error('ไม่สามารถอ่านข้อมูลได้ (โปรดตรวจสอบการแชร์ไฟล์เป็นสาธารณะ)');
+                }
+
+                Papa.parse(text, {
+                    header: false,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        if (results.data && results.data.length > 0) {
+                            rawData = results.data;
+                            headers = rawData[0];
+                            rows = rawData.slice(1);
+                            processLoadedData();
+                        } else {
+                            showError('ไม่พบข้อมูลรายชื่อในตารางชีต');
+                        }
+                    },
+                    error: function(err) {
+                        showError('การถอดรหัสไฟล์ CSV ล้มเหลว: ' + err.message);
+                    }
+                });
+
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        // จัดระเบียบคอลัมน์และตั้งค่าเริ่มต้นให้กับตาราง
+        function processLoadedData() {
+            if (!headers || headers.length === 0) {
+                showError('ไม่พบข้อมูลโครงสร้างคอลัมน์');
+                return;
+            }
+
+            // ค้นหาคอลัมน์ที่เป็นวันที่โดยอัตโนมัติ เพื่อนำไปกรองความสัมพันธ์
+            targetDateColumnIndex = 0; // ค่าเริ่มต้น
+            for (let i = 0; i < headers.length; i++) {
+                const hName = (headers[i] || '').toLowerCase();
+                if (hName.includes('วัน') || hName.includes('เดือน') || hName.includes('ปี') || hName.includes('date')) {
+                    targetDateColumnIndex = i;
+                    break;
+                }
+            }
+
+            // ซ่อนคอลัมน์ "ประทับเวลา" หรือ "Timestamp"
+            defaultHeaderOrder = headers
+                .map((_, i) => i)
+                .filter(i => {
+                    const h = headers[i] || '';
+                    return !h.toLowerCase().includes('ประทับเวลา') && !h.toLowerCase().includes('timestamp');
+                });
+            
+            currentHeaderOrder = [...defaultHeaderOrder]; 
+            
+            statusContainer.classList.add('hidden');
+            tableWrapper.classList.remove('hidden');
+            dateFilterContainer.classList.remove('hidden');
+            searchInput.disabled = false;
+            
+            applyFilters(); 
+            
+            const now = new Date();
+            lastUpdatedEl.textContent = now.toLocaleTimeString('th-TH') + ' น.';
+        }
+
+        function showError(detailMessage) {
+            loadingIndicator.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+            if(detailMessage) errorDetail.textContent = 'ข้อมูลอ้างอิง: ' + detailMessage;
+        }
+
+        // ตัวแปลงวันที่รองรับรูปแบบไทยและคริสต์ศักราช
+        function parseThaiDate(dateString) {
+            if (!dateString) return null;
+            const datePart = dateString.toString().trim().split(/[\sT]+/)[0];
+            const parts = datePart.split(/[-/]/);
+            if (parts.length !== 3) return null;
+
+            let d, m, y;
+            if (parts[0].length === 4) { 
+                y = parseInt(parts[0]);
+                m = parseInt(parts[1]);
+                d = parseInt(parts[2]);
+            } else { 
+                d = parseInt(parts[0]);
+                m = parseInt(parts[1]);
+                y = parseInt(parts[2]);
+            }
+
+            if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+            if (y > 2500) y -= 543; // แปลงพ.ศ. เป็น ค.ศ.
+            
+            return new Date(y, m - 1, d).getTime();
+        }
+
+        function applyFilters() {
+            const term = searchInput.value.toLowerCase().trim();
+            const startVal = startDateInput.value ? new Date(startDateInput.value).getTime() : null;
+            const endVal = endDateInput.value ? new Date(endDateInput.value).setHours(23,59,59,999) : null;
+
+            const filteredRows = rows.filter(row => {
+                // กรองข้อความค้นหาเดี่ยว
+                let textMatch = term === '';
+                row.forEach((cell) => {
+                    const cellStr = cell ? cell.toString().toLowerCase() : '';
+                    if (!textMatch && cellStr.includes(term)) {
+                        textMatch = true;
+                    }
+                });
+
+                // กรองวันที่จากคอลัมน์ที่สแกนเจอ
+                let dateMatch = true;
+                if (startVal || endVal) {
+                    dateMatch = false; 
+                    if (row[targetDateColumnIndex] !== undefined) {
+                        const cellDate = parseThaiDate(row[targetDateColumnIndex]);
+                        if (cellDate) {
+                            let isAfterStart = startVal ? cellDate >= startVal : true;
+                            let isBeforeEnd = endVal ? cellDate <= endVal : true;
+                            if (isAfterStart && isBeforeEnd) {
+                                dateMatch = true;
+                            }
+                        }
+                    }
+                }
+
+                return textMatch && dateMatch;
+            });
+
+            // ตรึงลำดับคอลัมน์ตามโครงสร้าง Google Sheets ปัจจุบันเสมอ
+            currentHeaderOrder = [...defaultHeaderOrder];
+
+            renderHeaders(currentHeaderOrder);
+            renderRows(filteredRows, currentHeaderOrder);
+            rowCountEl.textContent = filteredRows.length;
+        }
+
+        searchInput.addEventListener('input', applyFilters);
+        startDateInput.addEventListener('change', applyFilters);
+        endDateInput.addEventListener('change', applyFilters);
+        
+        clearDateBtn.addEventListener('click', () => {
+            startDateInput.value = '';
+            endDateInput.value = '';
+            applyFilters();
+        });
+
+        // จัดการแสดงผลไฟล์ภาพจาก Google Drive หรือลิงก์ภายนอก
+        function formatCellData(cellStr) {
+            if (!cellStr) return '<span class="text-gray-300">-</span>';
+            const str = cellStr.toString().trim();
+
+            const driveRegex = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=)([-\w]+)/;
+            const driveMatch = str.match(driveRegex);
+            if (driveMatch) {
+                const imgUrl = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+                return `<div class="relative group"><img src="${imgUrl}" alt="รูปภาพ" class="h-10 sm:h-14 w-auto max-w-[80px] sm:max-w-[100px] object-cover rounded shadow-sm transition-transform duration-300 group-hover:scale-[2.5] group-hover:z-50 cursor-zoom-in relative bg-white" loading="lazy" onerror="this.onerror=null; this.outerHTML='<a href=\\'${str}\\' target=\\'_blank\\' class=\\'text-blue-500 underline\\'>ลิงก์</a>';"/></div>`;
+            }
+
+            const imageRegex = /^https?:\/\/.*\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i;
+            if (imageRegex.test(str)) {
+                return `<div class="relative group"><img src="${str}" alt="รูปภาพ" class="h-10 sm:h-14 w-auto max-w-[80px] sm:max-w-[100px] object-cover rounded shadow-sm transition-transform duration-300 group-hover:scale-[2.5] group-hover:z-50 cursor-zoom-in relative bg-white" loading="lazy" /></div>`;
+            }
+
+            const urlRegex = /^https?:\/\/[^\s]+$/i;
+            if (urlRegex.test(str)) {
+                return `<a href="${str}" target="_blank" class="text-blue-600 hover:text-blue-800 underline">คลิกเปิดลิงก์</a>`;
+            }
+            return str;
+        }
+
+        function renderHeaders(order) {
+            let theadHTML = '<tr>';
+            order.forEach((colIndex) => {
+                const header = headers[colIndex];
+                theadHTML += `<th class="px-4 sm:px-6 py-3 sm:py-4 text-[11px] sm:text-xs font-semibold bg-gray-50 text-gray-600 uppercase tracking-wider whitespace-nowrap transition-colors">${header || '-'}</th>`;
+            });
+            theadHTML += `<th class="px-4 sm:px-6 py-3 sm:py-4 text-[11px] sm:text-xs font-semibold bg-gray-50 text-gray-600 uppercase tracking-wider whitespace-nowrap text-center sticky right-0 z-20 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)]">คัดลอก</th></tr>`;
+            tableHead.innerHTML = theadHTML;
+        }
+
+        function renderRows(dataToRender, order) {
+            tableBody.innerHTML = '';
+            currentDisplayedData = dataToRender; 
+            
+            if (dataToRender.length === 0) {
+                tableBody.parentElement.classList.add('hidden');
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                tableBody.parentElement.classList.remove('hidden');
+                noResults.classList.add('hidden');
+            }
+
+            let tbodyHTML = '';
+            dataToRender.forEach((row, rowIndex) => {
+                tbodyHTML += '<tr class="even:bg-blue-50 hover:bg-blue-100 transition duration-150 group/row border-b border-gray-100">';
+                
+                order.forEach((colIndex, i) => {
+                    const cell = row[colIndex];
+                    const cellData = formatCellData(cell);
+                    
+                    let cellClasses = 'text-gray-600 group-hover/row:text-gray-800';
+                    if (i === 0) {
+                        cellClasses = 'font-medium text-gray-900';
+                    }
+
+                    tbodyHTML += `<td class="px-4 sm:px-6 py-2 text-xs sm:text-sm ${cellClasses} whitespace-nowrap transition-colors">${cellData}</td>`;
+                });
+
+                tbodyHTML += `
+                    <td class="px-4 sm:px-6 py-2 text-center whitespace-nowrap sticky right-0 bg-white group-hover/row:bg-blue-100 transition-colors shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)] z-10">
+                        <button type="button" class="copy-btn text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 p-1.5 sm:p-2 rounded-lg shadow-sm border border-blue-200 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400" data-row-index="${rowIndex}" title="คัดลอกข้อมูลบรรทัดนี้">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 inline-block pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </td></tr>`;
+            });
+            tableBody.innerHTML = tbodyHTML;
+        }
+
+        // คัดลอกแถวข้อมูลทั้งหมดที่เลือก
+        tableBody.addEventListener('click', function(e) {
+            const btn = e.target.closest('.copy-btn');
+            if (btn) {
+                const rowIndex = btn.getAttribute('data-row-index');
+                const rowData = currentDisplayedData[rowIndex]; 
+                
+                let linesToCopy = [];
+                currentHeaderOrder.forEach(colIndex => {
+                    const headerName = headers[colIndex] || '-';
+                    const cellValue = rowData[colIndex] ? rowData[colIndex].trim() : '-';
+                    if (cellValue !== '-' && cellValue !== '') {
+                        linesToCopy.push(`• ${headerName} : ${cellValue}`);
+                    }
+                });
+
+                const textToCopy = linesToCopy.join('\n');
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        const originalHTML = btn.innerHTML;
+                        const originalClasses = btn.className;
+                        
+                        btn.innerHTML = `<svg class="w-4 h-4 sm:w-5 sm:h-5 inline-block pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                        btn.className = "copy-btn text-white bg-green-500 hover:bg-green-600 p-1.5 sm:p-2 rounded-lg shadow-sm transition-all pointer-events-none";
+                        
+                        showToast("คัดลอกข้อมูลเรียบร้อยแล้ว");
+
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.className = originalClasses;
+                        }, 2000);
+                    } else {
+                        showToast("ไม่สามารถคัดลอกได้", true);
+                    }
+                } catch (err) {
+                    showToast("เบราว์เซอร์ไม่สนับสนุนการคัดลอกอัตโนมัติ", true);
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            }
+        });
+
+        // ส่งออกข้อมูลในรูปแบบไฟล์ CSV (.csv)
+        exportBtn.addEventListener('click', function() {
+            if (!currentDisplayedData || currentDisplayedData.length === 0) {
+                showToast("ไม่มีข้อมูลให้ส่งออกในขณะนี้", true);
+                return;
+            }
+
+            const exportHeaders = currentHeaderOrder.map(colIndex => headers[colIndex] || '-');
+            const exportRows = currentDisplayedData.map(row => {
+                return currentHeaderOrder.map(colIndex => {
+                    return row[colIndex] ? row[colIndex].toString().trim() : '';
+                });
+            });
+
+            const csvDataToExport = [exportHeaders, ...exportRows];
+            const csvString = Papa.unparse(csvDataToExport);
+            
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + csvString], { type: 'text/csv;charset=utf-8;' });
+            
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            const d = new Date();
+            const dateStr = `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}_${d.getHours().toString().padStart(2,'0')}${d.getMinutes().toString().padStart(2,'0')}`;
+            link.setAttribute('download', `Accounts_Receivable_Export_${dateStr}.csv`);
+            
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast("ดาวน์โหลดไฟล์ CSV เรียบร้อยแล้ว");
+        });
+
+        // ระบบลากเพื่อเลื่อนตารางซ้ายขวา (Drag to scroll)
+        let isDown = false; let startX; let scrollLeft;
+        tableWrapper.addEventListener('mousedown', (e) => {
+            if(e.target.closest('button') || e.target.closest('a') || e.target.closest('img') || e.target.closest('input')) return;
+            isDown = true;
+            tableWrapper.classList.add('no-select'); 
+            startX = e.pageX - tableWrapper.offsetLeft;
+            scrollLeft = tableWrapper.scrollLeft;
+        });
+        tableWrapper.addEventListener('mouseleave', () => { isDown = false; tableWrapper.classList.remove('no-select'); });
+        tableWrapper.addEventListener('mouseup', () => { isDown = false; tableWrapper.classList.remove('no-select'); });
+        tableWrapper.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - tableWrapper.offsetLeft;
+            tableWrapper.scrollLeft = scrollLeft - ((x - startX) * 1.5); 
+        });
+
+        refreshBtn.addEventListener('click', function() {
+            searchInput.value = ''; 
+            startDateInput.value = '';
+            endDateInput.value = '';
+            loadData(); 
+        });
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
