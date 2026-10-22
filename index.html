@@ -601,6 +601,8 @@
         dateColIndex: 0,
         customerColIndex: -1,
         machineColIndex: -1,
+        productColIndex: -1,
+        amountColIndex: -1,
         statusColIndex: -1,
         noteColIndex: -1,
     };
@@ -731,10 +733,12 @@
     function processData() {
         if (!headers || headers.length === 0) { showError('No headers found'); return; }
 
-        // Auto-detect date, customer, machine, status, and note columns
+        // Auto-detect date, customer, machine, amount, status, and note columns
         CONFIG.dateColIndex = 0;
         CONFIG.customerColIndex = -1;
         CONFIG.machineColIndex = -1;
+        CONFIG.productColIndex = -1;
+        CONFIG.amountColIndex = -1;
         CONFIG.statusColIndex = -1;
         CONFIG.noteColIndex = -1;
         for (let i = 0; i < headers.length; i++) {
@@ -742,6 +746,8 @@
             if (h.includes('วัน') || h.includes('date')) CONFIG.dateColIndex = i;
             if (h.includes('ลูกค้า') || h.includes('customer')) CONFIG.customerColIndex = i;
             if (h.includes('เครื่อง') || h.includes('machine')) CONFIG.machineColIndex = i;
+            if (h.includes('รายการสินค้า') || h.includes('product')) CONFIG.productColIndex = i;
+            if (h.includes('จำนวนเงิน') || h.includes('ยอดเงิน') || h.includes('amount')) CONFIG.amountColIndex = i;
             if (h.includes('สถานะ') || h.includes('status')) CONFIG.statusColIndex = i;
             if (h.includes('หมายเหตุ') || h.includes('note') || h.includes('remark')) CONFIG.noteColIndex = i;
         }
@@ -752,6 +758,11 @@
                 const h = (headers[i] || '').toLowerCase();
                 return !h.includes('ประทับเวลา') && !h.includes('timestamp');
             });
+        if (CONFIG.productColIndex >= 0 && CONFIG.amountColIndex >= 0) {
+            defaultHeaderOrder = defaultHeaderOrder.filter(i => i !== CONFIG.amountColIndex);
+            const productPosition = defaultHeaderOrder.indexOf(CONFIG.productColIndex);
+            defaultHeaderOrder.splice(productPosition + 1, 0, CONFIG.amountColIndex);
+        }
         currentHeaderOrder = [...defaultHeaderOrder];
 
         // Show table
@@ -849,8 +860,15 @@
     // Rendering
     // ============================================
     function formatCell(str, colIdx) {
-        if (!str) return '<span style="color:#cbd5e1">—</span>';
+        if (str === null || str === undefined || str === '') return '<span style="color:#cbd5e1">—</span>';
         const s = str.toString().trim();
+
+        if (colIdx === CONFIG.amountColIndex) {
+            const amount = Number(s.replace(/[^0-9.-]/g, ''));
+            if (Number.isFinite(amount)) {
+                return amount.toLocaleString('th-TH', { style:'currency', currency:'THB', minimumFractionDigits:2 });
+            }
+        }
 
         // Status badge formatting
         if (colIdx === CONFIG.statusColIndex) {

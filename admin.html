@@ -129,6 +129,9 @@
         .btn-reset{padding:.875rem 1.75rem;border-radius:.875rem;background:transparent;color:var(--c-med);border:2px solid #e2e8f0;font-family:var(--font);font-size:.95rem;font-weight:600;cursor:pointer;transition:var(--tr);display:inline-flex;align-items:center;gap:.5rem}
         .btn-reset i{width:18px;height:18px}
         .btn-reset:hover{border-color:var(--danger);color:var(--danger);background:#fff5f5}
+        .edit-banner{display:flex;align-items:flex-start;gap:.75rem;background:linear-gradient(135deg,#fff7ed,#fffbeb);border:2px solid #fbbf24;border-radius:var(--r-lg);padding:1rem 1.25rem;margin-bottom:1.25rem;color:#92400e;font-size:.85rem}
+        .edit-banner i{width:22px;height:22px;flex-shrink:0}
+        .edit-banner strong{display:block;font-size:.95rem;margin-bottom:.2rem}
 
         /* ===== DASHBOARD TAB ===== */
         .setup-notice{background:linear-gradient(135deg,#fef3c7,#fef9c3);border:2px solid #fbbf24;border-radius:var(--r-lg);padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:.75rem;font-size:.85rem;color:#92400e}
@@ -185,6 +188,8 @@
         .act-btn i{width:15px;height:15px;pointer-events:none}
         .act-save{border-color:#a5b4fc;color:var(--accent)}
         .act-save:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(1.1)}
+        .act-edit{border-color:#fcd34d;color:#b45309}
+        .act-edit:hover{background:#f59e0b;color:#fff;border-color:#f59e0b;transform:scale(1.1)}
         .act-delete{border-color:#fca5a5;color:var(--danger)}
         .act-delete:hover{background:var(--danger);color:#fff;border-color:var(--danger);transform:scale(1.1)}
 
@@ -281,7 +286,7 @@
             <div class="setup-notice" id="setupNotice">
                 <i data-lucide="alert-triangle"></i>
                 <div>
-                    <strong>ยังไม่ได้ตั้งค่า Apps Script URL</strong> — ฟังก์ชันอัปเดตสถานะ/หมายเหตุ และลบข้อมูลจะยังใช้งานไม่ได้
+                    <strong>ยังไม่ได้ตั้งค่า Apps Script URL</strong> — ฟังก์ชันเพิ่ม แก้ไข อัปเดตสถานะ/หมายเหตุ และลบข้อมูลจะยังใช้งานไม่ได้
                     กรุณาตั้งค่าตามคู่มือ แล้วใส่ URL ในโค้ด <code>APPS_SCRIPT_URL</code>
                 </div>
             </div>
@@ -329,6 +334,10 @@
         <!-- ========== TAB: FORM ========== -->
         <div class="tab-content" id="contentForm">
             <div class="form-card">
+                <div class="edit-banner hidden" id="editBanner">
+                    <i data-lucide="pencil-line"></i>
+                    <div><strong>กำลังแก้ไขข้อมูลเดิม</strong><span id="editBannerText">ตรวจสอบข้อมูลให้ครบถ้วนก่อนบันทึกการแก้ไข</span></div>
+                </div>
                 <div class="policy-box">
                     <h3><i data-lucide="info"></i> มาตรการให้บริการลูกค้าค้างชำระ</h3>
                     <ul>
@@ -337,8 +346,8 @@
                         <li><strong>แยกตามเครื่อง</strong> — ใช้ Serial Number (SN) เป็นหลักในการพิจารณา</li>
                     </ul>
                 </div>
-                <div class="form-title"><i data-lucide="file-edit"></i> กรอกข้อมูลรายการลูกหนี้</div>
-                <p class="form-desc">กรุณากรอกข้อมูลให้ครบถ้วน ฟิลด์ที่มี <span style="color:var(--danger);font-weight:700">*</span> จำเป็นต้องกรอก</p>
+                <div class="form-title" id="formTitle"><i data-lucide="file-edit"></i> กรอกข้อมูลรายการลูกหนี้</div>
+                <p class="form-desc" id="formDesc">กรุณากรอกข้อมูลให้ครบถ้วน ฟิลด์ที่มี <span style="color:var(--danger);font-weight:700">*</span> จำเป็นต้องกรอก</p>
 
                 <form id="arForm" class="form-grid" autocomplete="off">
                     <div class="form-group">
@@ -386,6 +395,10 @@
                         <label class="form-label"><i data-lucide="package"></i> รายการสินค้า <span class="req">*</span></label>
                         <input type="text" class="form-input" id="fProduct" placeholder="รายละเอียดสินค้า / อะไหล่ / บริการ" required>
                     </div>
+                    <div class="form-group full-w">
+                        <label class="form-label"><i data-lucide="banknote"></i> จำนวนเงิน (บาท) <span class="req">*</span></label>
+                        <input type="number" class="form-input" id="fAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" required>
+                    </div>
                 </form>
                 <div class="form-actions">
                     <button type="button" class="btn-reset" id="resetBtn"><i data-lucide="rotate-ccw"></i> ล้างฟอร์ม</button>
@@ -411,7 +424,9 @@
         id: '1AM0tye_6iMhVkvEMHTeol3UNedCSUFuoz5UW_mNRPF0',
         gid: '2130399355',
         csv: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vToBTxaFb7fJCiG1kRL-Kn7oQApObudKPXH_ZB8gwu5QjHV8degedjvV4tY0TfjoIVUh0maiQwUVvXd/pub?output=csv',
-        dateCol: 0, statusCol: -1, noteCol: -1,
+        dateCol: 0, invoiceCol: 1, resp1Col: 2, resp2Col: 3, jobNoCol: 4,
+        customerCol: 5, machineCol: 6, serialCol: 7, productCol: 8,
+        amountCol: -1, statusCol: -1, noteCol: -1,
     };
     const STATUS_OPTIONS = ['ค้างชำระ','ชำระแล้ว','รอตรวจสอบ','ติดตามทวงถาม'];
     const STATUS_CLASSES = {'ค้างชำระ':'st-unpaid','ชำระแล้ว':'st-paid','รอตรวจสอบ':'st-pending','ติดตามทวงถาม':'st-follow'};
@@ -422,6 +437,7 @@
     let headers = [], rows = [], defaultOrder = [], currentOrder = [];
     let displayedData = []; // [{data:[], sheetRow:number}]
     let jsonpTimer = null;
+    let editingRecord = null; // {sheetRow:number, original:Array}
 
     // ============================================
     // 🔒 Lock Screen
@@ -431,7 +447,7 @@
     const lockBtn = document.getElementById('lockBtn');
     const mainContent = document.getElementById('mainContent');
 
-    if (sessionStorage.getItem('admin_unlocked') === 'true') unlock();
+    const shouldAutoUnlock = sessionStorage.getItem('admin_unlocked') === 'true';
 
     lockBtn.addEventListener('click', tryLogin);
     lockPwd.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
@@ -487,6 +503,8 @@
     const dTime      = document.getElementById('dTime');
     const dCount     = document.getElementById('dCount');
     const setupNotice = document.getElementById('setupNotice');
+    const tabDashboard = document.getElementById('tabDashboard');
+    const tabForm = document.getElementById('tabForm');
 
     // Hide setup notice if URL is configured
     if (APPS_SCRIPT_URL) setupNotice.classList.add('hidden');
@@ -548,10 +566,30 @@
     function processLoaded() {
         if (!headers || !headers.length) { showDashError('No headers'); return; }
 
-        SHEET.dateCol = 0; SHEET.statusCol = -1; SHEET.noteCol = -1;
+        const hasTimestamp = (headers[0] || '').toLowerCase().includes('ประทับเวลา') || (headers[0] || '').toLowerCase().includes('timestamp');
+        const baseCol = hasTimestamp ? 1 : 0;
+        SHEET.dateCol = baseCol;
+        SHEET.invoiceCol = baseCol + 1;
+        SHEET.resp1Col = baseCol + 2;
+        SHEET.resp2Col = baseCol + 3;
+        SHEET.jobNoCol = baseCol + 4;
+        SHEET.customerCol = baseCol + 5;
+        SHEET.machineCol = baseCol + 6;
+        SHEET.serialCol = baseCol + 7;
+        SHEET.productCol = baseCol + 8;
+        SHEET.amountCol = -1; SHEET.statusCol = -1; SHEET.noteCol = -1;
         for (let i = 0; i < headers.length; i++) {
             const h = (headers[i]||'').toLowerCase();
             if (h.includes('วัน') || h.includes('date')) SHEET.dateCol = i;
+            if (h.includes('invoice')) SHEET.invoiceCol = i;
+            if (h.includes('ผู้รับผิดชอบที่ 1') || h.includes('responsible 1')) SHEET.resp1Col = i;
+            if (h.includes('ผู้รับผิดชอบที่ 2') || h.includes('responsible 2')) SHEET.resp2Col = i;
+            if (h.includes('เลขงาน') || h.includes('job')) SHEET.jobNoCol = i;
+            if (h.includes('ลูกค้า') || h.includes('customer')) SHEET.customerCol = i;
+            if (h.includes('ชื่อเครื่อง') || h.includes('machine')) SHEET.machineCol = i;
+            if (h.includes('ซีเรียล') || h.includes('serial')) SHEET.serialCol = i;
+            if (h.includes('รายการสินค้า') || h.includes('product')) SHEET.productCol = i;
+            if (h.includes('จำนวนเงิน') || h.includes('ยอดเงิน') || h.includes('amount')) SHEET.amountCol = i;
             if (h.includes('สถานะ') || h.includes('status')) SHEET.statusCol = i;
             if (h.includes('หมายเหตุ') || h.includes('note') || h.includes('remark')) SHEET.noteCol = i;
         }
@@ -562,6 +600,11 @@
                 && !h.includes('สถานะ') && !h.includes('status')
                 && !h.includes('หมายเหตุ') && !h.includes('note') && !h.includes('remark');
         });
+        if (SHEET.productCol >= 0 && SHEET.amountCol >= 0) {
+            defaultOrder = defaultOrder.filter(i => i !== SHEET.amountCol);
+            const productPosition = defaultOrder.indexOf(SHEET.productCol);
+            defaultOrder.splice(productPosition + 1, 0, SHEET.amountCol);
+        }
         currentOrder = [...defaultOrder];
 
         dStatus.classList.add('hidden');
@@ -636,7 +679,7 @@
         currentOrder.forEach(i => { th += `<th>${headers[i]||'—'}</th>`; });
         th += '<th style="min-width:130px">📋 สถานะ</th>';
         th += '<th style="min-width:160px">📝 หมายเหตุ</th>';
-        th += '<th style="min-width:90px;text-align:center">⚡ จัดการ</th>';
+        th += '<th style="min-width:130px;text-align:center">⚡ จัดการ</th>';
         th += '</tr>';
         dTHead.innerHTML = th;
 
@@ -651,8 +694,10 @@
 
             tb += `<tr data-sheet-row="${sr}">`;
             currentOrder.forEach(ci => {
-                const val = row[ci] ? row[ci].toString().trim() : '';
-                tb += `<td>${val || '<span style="color:#cbd5e1">—</span>'}</td>`;
+                const rawVal = row[ci];
+                const val = rawVal !== null && rawVal !== undefined ? rawVal.toString().trim() : '';
+                const displayVal = ci === SHEET.amountCol && val !== '' ? formatCurrency(val) : val;
+                tb += `<td>${displayVal || '<span style="color:#cbd5e1">—</span>'}</td>`;
             });
 
             // Status dropdown
@@ -669,6 +714,7 @@
             // Action buttons
             tb += `<td><div class="action-cell">`;
             tb += `<button class="act-btn act-save" data-sr="${sr}" title="บันทึกสถานะ/หมายเหตุ"><i data-lucide="save"></i></button>`;
+            tb += `<button class="act-btn act-edit" data-sr="${sr}" title="แก้ไขข้อมูลรายการนี้"><i data-lucide="pencil"></i></button>`;
             tb += `<button class="act-btn act-delete" data-sr="${sr}" title="ลบรายการนี้"><i data-lucide="trash-2"></i></button>`;
             tb += `</div></td>`;
             tb += `</tr>`;
@@ -686,8 +732,15 @@
 
     function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+    function formatCurrency(value) {
+        const amount = Number(String(value).replace(/[^0-9.-]/g, ''));
+        return Number.isFinite(amount)
+            ? amount.toLocaleString('th-TH', { style:'currency', currency:'THB', minimumFractionDigits:2 })
+            : value;
+    }
+
     // ============================================
-    // 📊 Dashboard - Save & Delete via Apps Script
+    // 📊 Dashboard - Save, Edit & Delete via Apps Script
     // ============================================
     function callAppsScript(params) {
         return new Promise((resolve, reject) => {
@@ -754,6 +807,18 @@
             }
         }
 
+        // Edit button handler
+        const editBtn = e.target.closest('.act-edit');
+        if (editBtn) {
+            const sr = Number(editBtn.dataset.sr);
+            const item = displayedData.find(entry => entry.sheetRow === sr);
+            if (!item) {
+                Swal.fire({ icon:'error', title:'ไม่พบข้อมูล', text:'กรุณารีเฟรช Dashboard แล้วลองอีกครั้ง', confirmButtonColor:'#6366f1' });
+                return;
+            }
+            beginEditRecord(item);
+        }
+
         // Delete button handler
         const delBtn = e.target.closest('.act-delete');
         if (delBtn) {
@@ -798,6 +863,78 @@
         }
     });
 
+    function cellValue(row, index) {
+        const value = row[index];
+        return value === null || value === undefined ? '' : value.toString().trim();
+    }
+
+    function toDateInputValue(value) {
+        const timestamp = parseThaiDate(value);
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    }
+
+    function amountInputValue(value) {
+        const cleaned = String(value || '').replace(/[^0-9.-]/g, '');
+        if (cleaned === '') return '';
+        const amount = Number(cleaned);
+        return Number.isFinite(amount) ? amount.toString() : '';
+    }
+
+    function setSelectValue(selectId, value) {
+        const select = document.getElementById(selectId);
+        const normalized = value || '';
+        if (normalized && !Array.from(select.options).some(option => option.value === normalized)) {
+            const option = new Option(normalized, normalized);
+            option.dataset.editOption = 'true';
+            select.add(option);
+        }
+        select.value = normalized;
+    }
+
+    function beginEditRecord(item) {
+        const row = item.data;
+        editingRecord = { sheetRow:item.sheetRow, original:[...row] };
+
+        document.getElementById('fDate').value = toDateInputValue(cellValue(row, SHEET.dateCol));
+        document.getElementById('fInvoice').value = cellValue(row, SHEET.invoiceCol);
+        document.querySelectorAll('option[data-edit-option="true"]').forEach(option => option.remove());
+        setSelectValue('fResp1', cellValue(row, SHEET.resp1Col));
+        setSelectValue('fResp2', cellValue(row, SHEET.resp2Col));
+        document.getElementById('fJobNo').value = cellValue(row, SHEET.jobNoCol);
+        document.getElementById('fCustomer').value = cellValue(row, SHEET.customerCol);
+        setSelectValue('fMachine', cellValue(row, SHEET.machineCol));
+        document.getElementById('fSerial').value = cellValue(row, SHEET.serialCol);
+        document.getElementById('fProduct').value = cellValue(row, SHEET.productCol);
+        document.getElementById('fAmount').value = SHEET.amountCol >= 0 ? amountInputValue(cellValue(row, SHEET.amountCol)) : '';
+
+        document.getElementById('editBanner').classList.remove('hidden');
+        document.getElementById('editBannerText').textContent = `แถวที่ ${item.sheetRow} • Invoice ${cellValue(row, SHEET.invoiceCol) || '—'} • ${cellValue(row, SHEET.customerCol) || '—'}`;
+        document.getElementById('formTitle').innerHTML = '<i data-lucide="pencil-line"></i> แก้ไขข้อมูลรายการลูกหนี้';
+        document.getElementById('formDesc').innerHTML = 'กำลังแก้ไขข้อมูลที่บันทึกไว้แล้ว กรุณาตรวจสอบก่อนกด <strong>บันทึกการแก้ไข</strong>';
+        submitBtn.innerHTML = '<i data-lucide="save"></i> บันทึกการแก้ไข';
+        resetBtn.innerHTML = '<i data-lucide="x"></i> ยกเลิกการแก้ไข';
+        tabForm.innerHTML = '<i data-lucide="pencil-line"></i> แก้ไขข้อมูล';
+        tabForm.click();
+        lucide.createIcons();
+        document.getElementById('contentForm').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+
+    function leaveEditMode() {
+        editingRecord = null;
+        document.querySelectorAll('option[data-edit-option="true"]').forEach(option => option.remove());
+        arForm.reset();
+        setToday();
+        document.getElementById('editBanner').classList.add('hidden');
+        document.getElementById('formTitle').innerHTML = '<i data-lucide="file-edit"></i> กรอกข้อมูลรายการลูกหนี้';
+        document.getElementById('formDesc').innerHTML = 'กรุณากรอกข้อมูลให้ครบถ้วน ฟิลด์ที่มี <span style="color:var(--danger);font-weight:700">*</span> จำเป็นต้องกรอก';
+        submitBtn.innerHTML = '<i data-lucide="send"></i> บันทึกข้อมูล';
+        resetBtn.innerHTML = '<i data-lucide="rotate-ccw"></i> ล้างฟอร์ม';
+        tabForm.innerHTML = '<i data-lucide="plus-circle"></i> บันทึกข้อมูลใหม่';
+        lucide.createIcons();
+    }
+
     // Drag to scroll
     let isDown=false, startX, scrollLeft;
     dTableWrap.addEventListener('mousedown', e => {
@@ -830,11 +967,14 @@
         const mach=document.getElementById('fMachine').value;
         const sn=document.getElementById('fSerial').value.trim();
         const prod=document.getElementById('fProduct').value.trim();
+        const amount=document.getElementById('fAmount').value;
         const [yr,mo,dy] = dateVal.split('-');
+        const isEditing = editingRecord !== null;
 
         Swal.fire({
-            title:'ยืนยันการบันทึก?',
+            title:isEditing ? 'ยืนยันการแก้ไขข้อมูล?' : 'ยืนยันการบันทึก?',
             html:`<div style="text-align:left;font-size:.9rem;line-height:1.8;color:#475569">
+                ${isEditing ? `<div style="background:#fff7ed;border:2px solid #fbbf24;border-radius:10px;padding:.6rem .8rem;margin-bottom:.6rem;color:#92400e;font-weight:700">⚠️ ข้อมูลเดิมในแถวที่ ${editingRecord.sheetRow} จะถูกเขียนทับ</div>` : ''}
                 <div>📅 <b>วันที่:</b> ${dy}/${mo}/${yr}</div>
                 <div>📄 <b>Invoice:</b> ${inv}</div>
                 <div>👤 <b>ผู้รับผิดชอบ:</b> ${r1}${r2?' / '+r2:''}</div>
@@ -842,11 +982,12 @@
                 <div>🏢 <b>ลูกค้า:</b> ${cust}</div>
                 <div>🔧 <b>เครื่อง:</b> ${mach}</div>
                 <div>🔢 <b>SN:</b> ${sn}</div>
-                <div>📦 <b>สินค้า:</b> ${prod}</div></div>`,
-            icon:'question', showCancelButton:true, confirmButtonText:'บันทึก', cancelButtonText:'ยกเลิก',
+                <div>📦 <b>สินค้า:</b> ${prod}</div>
+                <div>💵 <b>จำนวนเงิน:</b> ${formatCurrency(amount)}</div></div>`,
+            icon:isEditing ? 'warning' : 'question', showCancelButton:true, confirmButtonText:isEditing ? 'บันทึกการแก้ไข' : 'บันทึก', cancelButtonText:'ยกเลิก',
             confirmButtonColor:'#6366f1', cancelButtonColor:'#94a3b8', reverseButtons:true,
         }).then(result => {
-            if (result.isConfirmed) doFormSubmit({yr,mo,dy,inv,r1,r2,job,cust,mach,sn,prod});
+            if (result.isConfirmed) doFormSubmit({yr,mo,dy,inv,r1,r2,job,cust,mach,sn,prod,amount,edit:editingRecord});
         });
     });
 
@@ -856,8 +997,8 @@
 
         try {
             const dateStr = `${d.dy}/${d.mo}/${d.yr}`;
-            const res = await callAppsScript({
-                action: 'add',
+            const params = {
+                action: d.edit ? 'edit' : 'add',
                 date: dateStr,
                 invoice: d.inv,
                 resp1: d.r1,
@@ -867,27 +1008,40 @@
                 machine: d.mach,
                 serial: d.sn,
                 product: d.prod,
+                amount: d.amount,
                 status: 'ค้างชำระ',
                 note: ''
-            });
+            };
+            if (d.edit) {
+                params.row = d.edit.sheetRow;
+                params.originalInvoice = cellValue(d.edit.original, SHEET.invoiceCol);
+                params.originalJobNo = cellValue(d.edit.original, SHEET.jobNoCol);
+                params.originalSerial = cellValue(d.edit.original, SHEET.serialCol);
+            }
+            const res = await callAppsScript(params);
 
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i data-lucide="send"></i> บันทึกข้อมูล';
+            submitBtn.innerHTML = d.edit ? '<i data-lucide="save"></i> บันทึกการแก้ไข' : '<i data-lucide="send"></i> บันทึกข้อมูล';
             lucide.createIcons();
 
             if (res && res.status === 'ok') {
                 Swal.fire({
                     icon: 'success',
-                    title: 'บันทึกสำเร็จ!',
-                    html: '<p style="color:#64748b">ข้อมูลถูกบันทึกลง Google Sheets แล้ว</p>',
+                    title: d.edit ? 'แก้ไขข้อมูลสำเร็จ!' : 'บันทึกสำเร็จ!',
+                    html: `<p style="color:#64748b">${d.edit ? 'ข้อมูลเดิมถูกอัปเดตใน Google Sheets แล้ว' : 'ข้อมูลถูกบันทึกลง Google Sheets แล้ว'}</p>`,
                     confirmButtonText: 'ตกลง',
                     confirmButtonColor: '#6366f1',
                     timer: 3000,
                     timerProgressBar: true
                 }).then(() => {
-                    const keepDate = document.getElementById('fDate').value;
-                    arForm.reset();
-                    document.getElementById('fDate').value = keepDate;
+                    if (d.edit) {
+                        leaveEditMode();
+                        tabDashboard.click();
+                    } else {
+                        const keepDate = document.getElementById('fDate').value;
+                        arForm.reset();
+                        document.getElementById('fDate').value = keepDate;
+                    }
                     loadDashboardData(); // รีเฟรชแดชบอร์ดหลังบ้าน
                 });
             } else {
@@ -895,7 +1049,7 @@
             }
         } catch (err) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i data-lucide="send"></i> บันทึกข้อมูล';
+            submitBtn.innerHTML = d.edit ? '<i data-lucide="save"></i> บันทึกการแก้ไข' : '<i data-lucide="send"></i> บันทึกข้อมูล';
             lucide.createIcons();
             Swal.fire({
                 icon: 'error',
@@ -907,14 +1061,22 @@
     }
 
     resetBtn.addEventListener('click', () => {
+        const isEditing = editingRecord !== null;
         Swal.fire({
-            title:'ล้างฟอร์มทั้งหมด?', icon:'warning', showCancelButton:true,
-            confirmButtonText:'ล้างเลย', cancelButtonText:'ยกเลิก',
+            title:isEditing ? 'ยกเลิกการแก้ไข?' : 'ล้างฟอร์มทั้งหมด?', icon:'warning', showCancelButton:true,
+            text:isEditing ? 'ข้อมูลเดิมจะไม่ถูกเปลี่ยนแปลง' : '',
+            confirmButtonText:isEditing ? 'ยกเลิกการแก้ไข' : 'ล้างเลย', cancelButtonText:'กลับไปตรวจสอบ',
             confirmButtonColor:'#f43f5e', cancelButtonColor:'#94a3b8', reverseButtons:true,
         }).then(r => {
             if (r.isConfirmed) {
-                arForm.reset(); setToday();
-                Swal.fire({ toast:true, position:'bottom-end', icon:'success', title:'ล้างฟอร์มแล้ว!', showConfirmButton:false, timer:1500 });
+                if (isEditing) {
+                    leaveEditMode();
+                    tabDashboard.click();
+                    Swal.fire({ toast:true, position:'bottom-end', icon:'info', title:'ยกเลิกการแก้ไขแล้ว ข้อมูลเดิมไม่เปลี่ยนแปลง', showConfirmButton:false, timer:2000 });
+                } else {
+                    arForm.reset(); setToday();
+                    Swal.fire({ toast:true, position:'bottom-end', icon:'success', title:'ล้างฟอร์มแล้ว!', showConfirmButton:false, timer:1500 });
+                }
             }
         });
     });
@@ -924,7 +1086,8 @@
     // ============================================
     window.onload = function() {
         lucide.createIcons();
-        lockPwd.focus();
+        if (shouldAutoUnlock) unlock();
+        else lockPwd.focus();
     };
     </script>
 </body>
